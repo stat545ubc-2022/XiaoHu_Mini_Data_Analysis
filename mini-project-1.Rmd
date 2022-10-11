@@ -167,6 +167,8 @@ We would like to choose datasets with more records and fewer missing values. Sin
 * `cancer_sample`: What is the relationship between diagnosis (malignant/benign) and mean radius of cell nucleus?
 
 * `vancouver_trees`: What is the difference in mean diameter in different species?
+
+* The research problem regarding cancer diagnosis is more interesting to me, so I will use `cancer_sample` as my dataset in the following questions.
 <!----------------------------------------------------------------------------->
 
 # Important note
@@ -184,16 +186,60 @@ If we rewind and go back to the learning objectives, you'll see that by the end 
 1.  Plot the distribution of a numeric variable.
 2.  Create a new variable based on other variables in your data (only if it makes sense)
 3.  Investigate how many missing values there are per variable. Can you find a way to plot this?
-4.  Explore the relationship between 2 variables in a plot.
+*4.  Explore the relationship between 2 variables in a plot.*
 5.  Filter observations in your data according to your own criteria. Think of what you'd like to explore - again, if this was the `titanic` dataset, I may want to narrow my search down to passengers born in a particular year...
-6.  Use a boxplot to look at the frequency of different observations within a single variable. You can do this for more than one variable if you wish!
-7.  Make a new tibble with a subset of your data, with variables and observations that you are interested in exploring.
-8.  Use a density plot to explore any of your variables (that are suitable for this type of plot).
+*6.  Use a boxplot to look at the frequency of different observations within a single variable.* You can do this for more than one variable if you wish!
+*7.  Make a new tibble with a subset of your data, with variables and observations that you are interested in exploring.*
+*8.  Use a density plot to explore any of your variables* (that are suitable for this type of plot).
 
 2.2 For each of the 4 exercises that you complete, provide a *brief explanation* of why you chose that exercise in relation to your data (in other words, why does it make sense to do that?), and sufficient comments for a reader to understand your reasoning and code.
 
 <!-------------------------- Start your work below ---------------------------->
 
+* **Task 6.  Use a boxplot to look at the frequency of different observations within a single variable.**
+```{r}
+
+cancer_sample$diagnosis <-
+  cancer_sample$diagnosis %>% recode_factor("B" = "benign", "M" = "malignant")
+
+cancer_sample %>% 
+  ggplot(aes(diagnosis,radius_mean)) +
+  geom_boxplot(width = 0.4) +
+  theme_bw()
+```
+
+I firstly refactor the levels of `diagnosis` as "benign" and "malignant", instead of "B" and "M", which can make more sense to the readers.\
+This boxplot is reasonable since it shows relationship between a numerical variable (`radius_mean`) and an explortabry variable (`diagnosis`). The plot indicates that medium of cell nucleus radius is much larger in malignant group, and the max radius mean in benign group is a bit higher than the medium radius mean in maglignant.
+
+* **Task8.  Use a density plot to explore any of your variables**
+```{r}
+cancer_sample %>% 
+  ggplot(aes(x = radius_mean)) + 
+  geom_density() +
+  theme_bw()
+```
+
+This is a density plot for `radius_mean`, which makes sense since it is a numerical variable. From the plot, it is clear that radius mean is concentrated between 10 and 15.
+
+* **Task 4.  Explore the relationship between 2 variables in a plot.**
+```{r}
+cancer_sample %>% 
+  ggplot(aes(x = radius_mean, y = concavity_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw()
+```
+
+I used a scatter plot to explore the relationship between two numerical variables. The plot shows a positive correlation between `radius_mean` and `concavity_mean`.
+
+* **Task 7.  Make a new tibble with a subset of your data, with variables and observations that you are interested in exploring.**
+```{r}
+cancer_subsample <- 
+  cancer_sample %>% 
+    select(c(1:12))
+head(cancer_subsample)
+```
+For simplicity, I will use mean values to explore the research questions.
 <!----------------------------------------------------------------------------->
 
 # Task 3: Write your research questions (5 points)
@@ -201,6 +247,12 @@ If we rewind and go back to the learning objectives, you'll see that by the end 
 So far, you have chosen a dataset and gotten familiar with it through exploring the data. Now it's time to figure out 4 research questions that you would like to answer with your data! Write the 4 questions and any additional comments at the end of this deliverable. These questions are not necessarily set in stone - TAs will review them and give you feedback; therefore, you may choose to pursue them as they are for the rest of the project, or make modifications!
 
 <!--- *****START HERE***** --->
+
+* What is the difference in distribution of radius mean in benign and malignant diagnosis?
+* Is diagnosis result associated with radius of mean?
+* What is the relationship between radius mean and compactness mean?
+* What is the difference in symmetry mean in cell nucleus with different radius mean?
+
 
 # Task 4: Process and summarize your data (13 points)
 
@@ -229,6 +281,100 @@ Ensure that the output of each operation is printed!
 Make sure it's clear what research question you are doing each operation for!
 
 <!------------------------- Start your work below ----------------------------->
+* **What is the difference in symmetry mean of cell nucleus with different radius mean?**
+- summarizing 3 + graphing 5
+
+* factor the radius mean\
+From Task2, we see the radius mean is concentrated between 10 and 15. Therefore, the level would be "Large" if radius mean is greater than 15, "Medium" if the radius mean is between 10 and 15, "Small" otherwise.
+```{r}
+cancer_subsample <- cancer_subsample %>% 
+  mutate(radius_level = case_when(radius_mean>15 ~ "Large",
+                                   radius_mean<10 ~ "Small",
+                                   TRUE ~ "Medium"))
+
+cancer_subsample %>% select(radius_mean,radius_level) %>% head()
+```
+
+```{r, warning=FALSE}
+cancer_subsample %>% 
+  ggplot(aes(radius_level, smoothness_mean )) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point", shape = 8,
+               size = 2, color = "dark green") +
+  theme_bw()
+```
+
+The range of mean of smoothness is wider for cell nucleus with larger radius. Medium of smoothness mean in 'Large' group is the largest.
+
+* **Is diagnosis result associated with area mean?**
+- summarizing 2 + graphing 5
+```{r}
+cancer_subsample <- cancer_subsample %>% 
+  mutate(area_level = case_when(area_mean < quantile(area_mean,0.25) ~ "1st quater",
+                                area_mean > quantile(area_mean,0.75) ~ "4th quater",
+                                (area_mean < quantile(area_mean,0.75)) & (area_mean > quantile(area_mean,0.5)) ~ "3rd quater",
+                                TRUE ~ "2nd quater"))
+cancer_subsample %>% select(area_mean,area_level)
+```
+```{r}
+t <- cancer_subsample %>% 
+  group_by(diagnosis,area_level) %>% 
+  count()
+t
+```
+```{r}
+t %>% 
+  ggplot(aes(x = area_level)) +
+  geom_col(aes(x=area_level,y = n), alpha = 0.5, fill = "grey") +
+  geom_bar(aes(weight = n,fill = diagnosis),position="dodge") +
+  theme_bw()
+```
+
+I classified four groups of area mean according to quantitle of the variable. Grey bar is total observation in each area level group, and red and blue bar are number of observation in benign diagnosis group and  malignant diagnosis group respectively. It is clear there are less and less observations in benign group as area level gets higher. By contrast, number of observations increases in maglignant group as area level gets higher.
+
+* **Is there any relationship between radius mean and number of concave portions of the contour?**
+- summarizing 4 + graphing 5
+```{r}
+cancer_subsample %>% 
+  group_by(diagnosis,radius_level) %>% 
+  summarise(range = range(concave_points_mean),mean = mean(concave_points_mean), median = median(concave_points_mean),sd = sd(concave_points_mean))
+```
+```{r}
+cancer_subsample %>% 
+  ggplot(aes(x = radius_mean, y = concave_points_mean , color = diagnosis)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw()
+```
+
+In both diagnosis groups, there is a positive relationship between radius mean and number of concave points. The slope of malignant diagnosis is steeper.
+
+* **What is the difference in distribution of radius in benign and malignant diagnosis?**
+
+- summarizing 1 + graphing 8
+```{r}
+cancer_sample %>% 
+  group_by(diagnosis) %>% 
+  summarise(range = range(radius_mean),mean = mean(radius_mean),min = min(radius_mean), max = max(radius_mean))
+```
+```{r}
+cancer_sample %>% 
+  ggplot(aes(x = radius_mean))+
+  geom_histogram(aes(fill = diagnosis),bins = 10)
+```
+
+```{r}
+cancer_sample %>% 
+  ggplot(aes(x = radius_mean))+
+  geom_histogram(aes(fill = diagnosis),bins = 30)
+```
+```{r}
+cancer_sample %>% 
+  ggplot(aes(x = radius_mean))+
+  geom_histogram(aes(fill = diagnosis),bins = 60)
+```
+
+I tried three histogram plots with three different bin sizes, and `bin = 30` is the most suitable one. Since if bin size is too small (`bin = 10`), some information will be lost. If bin size is too large (`bin = 60`), the variation in the plot will be too detailed and it is hard for us to find a pattern from the plot. 
 
 <!----------------------------------------------------------------------------->
 
@@ -237,7 +383,7 @@ Make sure it's clear what research question you are doing each operation for!
 Based on the operations that you've completed, how much closer are you to answering your research questions? Think about what aspects of your research questions remain unclear. Can your research questions be refined, now that you've investigated your data a bit more? Which research questions are yielding interesting results?
 
 <!-------------------------- Start your work below ---------------------------->
-
+From the plots above, we can discover differences in metrics in benign diagnosis group and malignant diagnosis group, and the plots also indicate relationship between variables. However, it is still unclear whether the association or differences are statistically significant. The result from the bar plot of the number of observations in different area levels is the most impressive. Most of the observations in the benign group have a small area mean. By contrast, observations in the malignant group tend to have larger areas. The research question may be refined as to whether area mean has a significant association with diagnosis. 
 <!----------------------------------------------------------------------------->
 
 ### Attribution
