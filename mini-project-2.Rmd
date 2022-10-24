@@ -42,6 +42,7 @@ Begin by loading your data and the tidyverse package below:
 ```{r, message = FALSE}
 library(datateachr) # <- might contain the data you picked!
 library(tidyverse)
+library(broom)
 ```
 
 # Task 1: Tidy your data (15 points)
@@ -61,7 +62,15 @@ A reminder of the definition of *tidy* data:
 Based on the definition above, can you identify if your data is tidy or untidy? Go through all your columns, or if you have \>8 variables, just pick 8, and explain whether the data is untidy or tidy.
 
 <!--------------------------- Start your work below --------------------------->
+```{r}
+head(cancer_sample)
+```
+```{r}
+cancer_1 <- cancer_sample[1:8]
+head(cancer_1)
+```
 
+My data is tidy, since each variable forms a column, each observation forms a row and each cell is a single measurement.
 <!----------------------------------------------------------------------------->
 
 ### 2.2 (5 points)
@@ -73,7 +82,20 @@ If your data is untidy, then tidy it! Then, untidy it back to it's original stat
 Be sure to explain your reasoning for this task. Show us the "before" and "after".
 
 <!--------------------------- Start your work below --------------------------->
+```{r}
+cancer_2 <- cancer_1 %>% pivot_longer(c(-1,-2), 
+                         names_to = "types", 
+                         values_to = 'values')
+cancer_2
+```
+```{r}
+cancer_3 <- cancer_2 %>% pivot_wider(names_from=types, 
+                       values_from = values)
 
+head(cancer_3)
+```
+
+I used `pivot_longer` to untidy my dataset, so there are 6 rows for each observation, and each row is mean value of one of six features of that observation. I used `pivot_wider` to tidy back my dataset.
 <!----------------------------------------------------------------------------->
 
 ### 2.3 (7.5 points)
@@ -82,20 +104,46 @@ Now, you should be more familiar with your data, and also have made progress in 
 
 <!-------------------------- Start your work below ---------------------------->
 
-1.  *FILL_THIS_IN*
-2.  *FILL_THIS_IN*
+1.  **What is the relationship between radius mean and texture mean in benign group and malignant group?**
+2.  **Is there any relationship between radius mean and number of concave portions of the contour?**
 
 <!----------------------------------------------------------------------------->
 
 Explain your decision for choosing the above two research questions.
 
 <!--------------------------- Start your work below --------------------------->
-
+From Task4 in milestone 1, the scatter plot of radius and concave portions of the contour shows a strong positive correlation relationship, so I would like to dig into this research question to figure out whether the association is significant. The boxplot shows that tumor with larger mean value of radius has larger texture mean. In this milestone, I would like to examine their relationship by using texture mean as the independent variable and radius as the dependent variable. The difference in association respect to different diagnosis group will also be included in further analysis.
 <!----------------------------------------------------------------------------->
 
 Now, try to choose a version of your data that you think will be appropriate to answer these 2 questions. Use between 4 and 8 functions that we've covered so far (i.e. by filtering, cleaning, tidy'ing, dropping irrelevant columns, etc.).
 
 <!--------------------------- Start your work below --------------------------->
+```{r}
+# select values of mean
+cancer_subsample <- 
+  cancer_sample %>% 
+    select(c(1:12))
+
+# rename the diagnosis factor levels
+cancer_subsample$diagnosis <-
+  cancer_subsample$diagnosis %>% recode_factor("B" = "benign", "M" = "malignant")
+
+# create a radius level group
+cancer_subsample <- cancer_subsample %>% 
+  mutate(radius_level = case_when(radius_mean>15 ~ "Large",
+                                   radius_mean<10 ~ "Small",
+                                   TRUE ~ "Medium"))
+
+# create a texture level group according to quantile., Q1 is lower than 25% quantile, Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and Q4 is higher than 75% quantile.
+cancer_subsample <- cancer_subsample %>% 
+  mutate(texture_level = case_when( texture_mean < 16.17  ~ "Q1",
+                                   texture_mean< 18.84 ~ "Q2",
+                                   texture_mean< 21.80 ~ "Q3",
+                                   TRUE ~ "Q4"))
+head(cancer_subsample)
+```
+
+
 
 <!----------------------------------------------------------------------------->
 
@@ -106,6 +154,16 @@ For this exercise, you'll be choosing two of the three tasks below -- both tasks
 But first, tasks 1 and 2 below ask you to modify a plot you made in a previous milestone. The plot you choose should involve plotting across at least three groups (whether by facetting, or using an aesthetic like colour). Place this plot below (you're allowed to modify the plot if you'd like). If you don't have such a plot, you'll need to make one. Place the code for your plot below.
 
 <!-------------------------- Start your work below ---------------------------->
+```{r message=FALSE}
+p <- cancer_subsample %>% 
+  ggplot(aes(texture_level, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis)+
+  theme_bw()
+print(p)
+```
 
 <!----------------------------------------------------------------------------->
 
@@ -128,14 +186,67 @@ Now, choose two of the following tasks.
 
 <!-------------------------- Start your work below ---------------------------->
 
-**Task Number**: FILL_THIS_IN
+**Task Number**: 1
+```{r}
+cancer_subsample$texture_level <- as.factor(cancer_subsample$texture_level)
+levels(cancer_subsample$texture_level)
+```
+
+The factor levels of column `texture_level` in data frame `cancer_subsample` are ordered alphabetically. Their difference in median of radius mean is small, it would be better to order factor levels according to their median of radius, so readers can tell the difference in distribution of radius from the order of categories on x axis. Moreover, we want to see different orders of factors within benign group and malignant group.
+
+```{r}
+cancer_subsample <- cancer_subsample %>% 
+  mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
+```
+
+```{r}
+p <- cancer_subsample %>% 
+  ggplot(aes(neworder_t, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis,scales = "free_x")+
+  labs(x = "texture_level (Quarter)") + 
+  scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  theme_bw()
+print(p)
+```
+
+From the plot above, it is clear that larger texture mean is associated with larger mean of concave points in benign group. However, the trend is slightly different in malignant group. The median of concave points number is higher in malignant group in overall. The 4th quarter of texture_mean has lowest median value of concave ponits number in benign group. By contrast, it has the 2nd highest median value of concave points number in malignant group. By reordering the factor, we can easily tell the difference in association between texture and concave points within two groups.
 
 <!----------------------------------------------------------------------------->
 
 <!-------------------------- Start your work below ---------------------------->
 
-**Task Number**: FILL_THIS_IN
+**Task Number**: 2
+From plots in Task 1, 2nd and 3rd quarter of texture_mean have very similar distrubution in number of concave ponits, so I would like to combine these two levels into one factor level called `Medium`. First Quarter of texture_mean will be renamed as `Low` and Fourth Quarter of texture_mean will be renamed as `High`.
 
+```{r}
+cancer_subsample$texture_level <- cancer_subsample$texture_level %>% fct_collapse( Medium = c("Q2","Q3"))
+levels(cancer_subsample$texture_level) <- c("Low","Medium","High")
+levels(cancer_subsample$texture_level)
+```
+
+```{r}
+cancer_subsample <- cancer_subsample %>% 
+  mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
+```
+```{r}
+p <- cancer_subsample %>% 
+  ggplot(aes(neworder_t, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis,scales = "free_x")+
+  labs(x = "texture_level") + 
+  #scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  theme_bw()
+print(p)
+```
+
+The trend is more clear after grouping Q2 and Q3 together. Low texture level is associated with higher concave points mean in both groups. High texture level is expected to have higher concave points mean than the medium texture level in malignant group, but it is expected to have lower concave points mean than the medium texture level in benign group. Therefore, high texture level along with larger concave points might be one of the characteristics of a malignant tumor.
 <!----------------------------------------------------------------------------->
 
 # Task 3: Modelling
@@ -146,9 +257,9 @@ Pick a research question, and pick a variable of interest (we'll call it "Y") th
 
 <!-------------------------- Start your work below ---------------------------->
 
-**Research Question**: FILL_THIS_IN
+**Research Question**: Is there any relationship between radius mean and number of concave portions of the contour?
 
-**Variable of interest**: FILL_THIS_IN
+**Variable of interest**: radius_mean
 
 <!----------------------------------------------------------------------------->
 
@@ -163,6 +274,11 @@ Fit a model or run a hypothesis test that provides insight on this variable with
     -   You could use `lm()` to test for significance of regression.
 
 <!-------------------------- Start your work below ---------------------------->
+```{r}
+model <- lm(radius_mean ~ concave_points_mean, data = cancer_subsample)
+summary(model)
+```
+P value of coefficient of concave_points_mean is smaller than 0.05, which indicates we have strong evidence to reject the null hypothesis that there is no association between concave_points_mean and radius_mean.
 
 <!----------------------------------------------------------------------------->
 
@@ -175,6 +291,10 @@ Produce something relevant from your fitted model: either predictions on Y, or a
 -   Obtain your results using the `broom` package if possible. If your model is not compatible with the broom function you're needing, then you can obtain your results by some other means, but first indicate which broom function is not compatible.
 
 <!-------------------------- Start your work below ---------------------------->
+I am looking for the R-squared value of my model. From the tibble, it is clear that R-squared value is specified in `r.squared` column, which is 0.68 approximately. It means that 68% of the variation of the observed radius_mean can be explained by the model.
+```{r}
+glance(model)
+```
 
 <!----------------------------------------------------------------------------->
 
@@ -190,6 +310,14 @@ Take a summary table that you made from Milestone 1 (Task 4.2), and write it as 
 -   **Reproducibility criteria**: You should be able to delete the csv file, and remake it simply by knitting this Rmd file.
 
 <!-------------------------- Start your work below ---------------------------->
+```{r}
+out_t <- cancer_subsample %>% 
+  group_by(diagnosis,radius_level) %>% 
+  summarise(range = range(concave_points_mean),mean = mean(concave_points_mean), median = median(concave_points_mean),sd = sd(concave_points_mean))
+```
+```{r}
+write_csv(out_t, file.path("output", "here_exported_file.csv"))
+```
 
 <!----------------------------------------------------------------------------->
 
@@ -200,6 +328,10 @@ Write your model object from Task 3 to an R binary file (an RDS), and load it ag
 -   The same robustness and reproducibility criteria as in 3.1 apply here.
 
 <!-------------------------- Start your work below ---------------------------->
+```{r}
+saveRDS(model, file.path("output","model_info"))
+readRDS(file.path("output","model_info"))
+```
 
 <!----------------------------------------------------------------------------->
 

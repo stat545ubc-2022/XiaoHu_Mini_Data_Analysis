@@ -1,0 +1,680 @@
+Mini Data Analysis Milestone 2
+================
+
+*To complete this milestone, you can edit [this `.rmd`
+file](https://raw.githubusercontent.com/UBC-STAT/stat545.stat.ubc.ca/master/content/mini-project/mini-project-2.Rmd)
+directly. Fill in the sections that are commented out with
+`<!--- start your work here--->`. When you are done, make sure to knit
+to an `.md` file by changing the output in the YAML header to
+`github_document`, before submitting a tagged release on canvas.*
+
+# Welcome to your second (and last) milestone in your mini data analysis project!
+
+In Milestone 1, you explored your data, came up with research questions,
+and obtained some results by making summary tables and graphs. This
+time, we will first explore more in depth the concept of *tidy data.*
+Then, you’ll be sharpening some of the results you obtained from your
+previous milestone by:
+
+-   Manipulating special data types in R: factors and/or dates and
+    times.
+-   Fitting a model object to your data, and extract a result.
+-   Reading and writing data as separate files.
+
+**NOTE**: The main purpose of the mini data analysis is to integrate
+what you learn in class in an analysis. Although each milestone provides
+a framework for you to conduct your analysis, it’s possible that you
+might find the instructions too rigid for your data set. If this is the
+case, you may deviate from the instructions – just make sure you’re
+demonstrating a wide range of tools and techniques taught in this class.
+
+# Instructions
+
+**To complete this milestone**, edit [this very `.Rmd`
+file](https://raw.githubusercontent.com/UBC-STAT/stat545.stat.ubc.ca/master/content/mini-project/mini-project-2.Rmd)
+directly. Fill in the sections that are tagged with
+`<!--- start your work here--->`.
+
+**To submit this milestone**, make sure to knit this `.Rmd` file to an
+`.md` file by changing the YAML output settings from
+`output: html_document` to `output: github_document`. Commit and push
+all of your work to your mini-analysis GitHub repository, and tag a
+release on GitHub. Then, submit a link to your tagged release on canvas.
+
+**Points**: This milestone is worth 55 points (compared to the 45 points
+of the Milestone 1): 45 for your analysis, and 10 for your entire
+mini-analysis GitHub repository. Details follow.
+
+**Research Questions**: In Milestone 1, you chose two research questions
+to focus on. Wherever realistic, your work in this milestone should
+relate to these research questions whenever we ask for justification
+behind your work. In the case that some tasks in this milestone don’t
+align well with one of your research questions, feel free to discuss
+your results in the context of a different research question.
+
+# Learning Objectives
+
+By the end of this milestone, you should:
+
+-   Understand what *tidy* data is, and how to create it using `tidyr`.
+-   Generate a reproducible and clear report using R Markdown.
+-   Manipulating special data types in R: factors and/or dates and
+    times.
+-   Fitting a model object to your data, and extract a result.
+-   Reading and writing data as separate files.
+
+# Setup
+
+Begin by loading your data and the tidyverse package below:
+
+``` r
+library(datateachr) # <- might contain the data you picked!
+library(tidyverse)
+library(broom)
+```
+
+# Task 1: Tidy your data (15 points)
+
+In this task, we will do several exercises to reshape our data. The goal
+here is to understand how to do this reshaping with the `tidyr` package.
+
+A reminder of the definition of *tidy* data:
+
+-   Each row is an **observation**
+-   Each column is a **variable**
+-   Each cell is a **value**
+
+*Tidy’ing* data is sometimes necessary because it can simplify
+computation. Other times it can be nice to organize data so that it can
+be easier to understand when read manually.
+
+### 2.1 (2.5 points)
+
+Based on the definition above, can you identify if your data is tidy or
+untidy? Go through all your columns, or if you have \>8 variables, just
+pick 8, and explain whether the data is untidy or tidy.
+
+<!--------------------------- Start your work below --------------------------->
+
+``` r
+head(cancer_sample)
+```
+
+    ## # A tibble: 6 × 32
+    ##       ID diagn…¹ radiu…² textu…³ perim…⁴ area_…⁵ smoot…⁶ compa…⁷ conca…⁸ conca…⁹
+    ##    <dbl> <chr>     <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1 8.42e5 M          18.0    10.4   123.    1001   0.118   0.278   0.300   0.147 
+    ## 2 8.43e5 M          20.6    17.8   133.    1326   0.0847  0.0786  0.0869  0.0702
+    ## 3 8.43e7 M          19.7    21.2   130     1203   0.110   0.160   0.197   0.128 
+    ## 4 8.43e7 M          11.4    20.4    77.6    386.  0.142   0.284   0.241   0.105 
+    ## 5 8.44e7 M          20.3    14.3   135.    1297   0.100   0.133   0.198   0.104 
+    ## 6 8.44e5 M          12.4    15.7    82.6    477.  0.128   0.17    0.158   0.0809
+    ## # … with 22 more variables: symmetry_mean <dbl>, fractal_dimension_mean <dbl>,
+    ## #   radius_se <dbl>, texture_se <dbl>, perimeter_se <dbl>, area_se <dbl>,
+    ## #   smoothness_se <dbl>, compactness_se <dbl>, concavity_se <dbl>,
+    ## #   concave_points_se <dbl>, symmetry_se <dbl>, fractal_dimension_se <dbl>,
+    ## #   radius_worst <dbl>, texture_worst <dbl>, perimeter_worst <dbl>,
+    ## #   area_worst <dbl>, smoothness_worst <dbl>, compactness_worst <dbl>,
+    ## #   concavity_worst <dbl>, concave_points_worst <dbl>, symmetry_worst <dbl>, …
+
+``` r
+cancer_1 <- cancer_sample[1:8]
+head(cancer_1)
+```
+
+    ## # A tibble: 6 × 8
+    ##         ID diagnosis radius_mean texture_mean perimete…¹ area_…² smoot…³ compa…⁴
+    ##      <dbl> <chr>           <dbl>        <dbl>      <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1   842302 M                18.0         10.4      123.    1001   0.118   0.278 
+    ## 2   842517 M                20.6         17.8      133.    1326   0.0847  0.0786
+    ## 3 84300903 M                19.7         21.2      130     1203   0.110   0.160 
+    ## 4 84348301 M                11.4         20.4       77.6    386.  0.142   0.284 
+    ## 5 84358402 M                20.3         14.3      135.    1297   0.100   0.133 
+    ## 6   843786 M                12.4         15.7       82.6    477.  0.128   0.17  
+    ## # … with abbreviated variable names ¹​perimeter_mean, ²​area_mean,
+    ## #   ³​smoothness_mean, ⁴​compactness_mean
+
+My data is tidy, since each variable forms a column, each observation
+forms a row and each cell is a single measurement.
+<!----------------------------------------------------------------------------->
+
+### 2.2 (5 points)
+
+Now, if your data is tidy, untidy it! Then, tidy it back to it’s
+original state.
+
+If your data is untidy, then tidy it! Then, untidy it back to it’s
+original state.
+
+Be sure to explain your reasoning for this task. Show us the “before”
+and “after”.
+
+<!--------------------------- Start your work below --------------------------->
+
+``` r
+cancer_2 <- cancer_1 %>% pivot_longer(c(-1,-2), 
+                         names_to = "types", 
+                         values_to = 'values')
+cancer_2
+```
+
+    ## # A tibble: 3,414 × 4
+    ##        ID diagnosis types              values
+    ##     <dbl> <chr>     <chr>               <dbl>
+    ##  1 842302 M         radius_mean        18.0  
+    ##  2 842302 M         texture_mean       10.4  
+    ##  3 842302 M         perimeter_mean    123.   
+    ##  4 842302 M         area_mean        1001    
+    ##  5 842302 M         smoothness_mean     0.118
+    ##  6 842302 M         compactness_mean    0.278
+    ##  7 842517 M         radius_mean        20.6  
+    ##  8 842517 M         texture_mean       17.8  
+    ##  9 842517 M         perimeter_mean    133.   
+    ## 10 842517 M         area_mean        1326    
+    ## # … with 3,404 more rows
+
+``` r
+cancer_3 <- cancer_2 %>% pivot_wider(names_from=types, 
+                       values_from = values)
+
+head(cancer_3)
+```
+
+    ## # A tibble: 6 × 8
+    ##         ID diagnosis radius_mean texture_mean perimete…¹ area_…² smoot…³ compa…⁴
+    ##      <dbl> <chr>           <dbl>        <dbl>      <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1   842302 M                18.0         10.4      123.    1001   0.118   0.278 
+    ## 2   842517 M                20.6         17.8      133.    1326   0.0847  0.0786
+    ## 3 84300903 M                19.7         21.2      130     1203   0.110   0.160 
+    ## 4 84348301 M                11.4         20.4       77.6    386.  0.142   0.284 
+    ## 5 84358402 M                20.3         14.3      135.    1297   0.100   0.133 
+    ## 6   843786 M                12.4         15.7       82.6    477.  0.128   0.17  
+    ## # … with abbreviated variable names ¹​perimeter_mean, ²​area_mean,
+    ## #   ³​smoothness_mean, ⁴​compactness_mean
+
+I used `pivot_longer` to untidy my dataset, so there are 6 rows for each
+observation, and each row is mean value of one of six features of that
+observation. I used `pivot_wider` to tidy back my dataset.
+<!----------------------------------------------------------------------------->
+
+### 2.3 (7.5 points)
+
+Now, you should be more familiar with your data, and also have made
+progress in answering your research questions. Based on your interest,
+and your analyses, pick 2 of the 4 research questions to continue your
+analysis in the next four tasks:
+
+<!-------------------------- Start your work below ---------------------------->
+
+1.  **What is the relationship between radius mean and texture mean in
+    benign group and malignant group?**
+2.  **Is there any relationship between radius mean and number of
+    concave portions of the contour?**
+
+<!----------------------------------------------------------------------------->
+
+Explain your decision for choosing the above two research questions.
+
+<!--------------------------- Start your work below --------------------------->
+
+From Task4 in milestone 1, the scatter plot of radius and concave
+portions of the contour shows a strong positive correlation
+relationship, so I would like to dig into this research question to
+figure out whether the association is significant. The boxplot shows
+that tumor with larger mean value of radius has larger texture mean. In
+this milestone, I would like to examine their relationship by using
+texture mean as the independent variable and radius as the dependent
+variable. The difference in association respect to different diagnosis
+group will also be included in further analysis.
+<!----------------------------------------------------------------------------->
+
+Now, try to choose a version of your data that you think will be
+appropriate to answer these 2 questions. Use between 4 and 8 functions
+that we’ve covered so far (i.e. by filtering, cleaning, tidy’ing,
+dropping irrelevant columns, etc.).
+
+<!--------------------------- Start your work below --------------------------->
+
+``` r
+# select values of mean
+cancer_subsample <- 
+  cancer_sample %>% 
+    select(c(1:12))
+
+# rename the diagnosis factor levels
+cancer_subsample$diagnosis <-
+  cancer_subsample$diagnosis %>% recode_factor("B" = "benign", "M" = "malignant")
+
+# create a radius level group
+cancer_subsample <- cancer_subsample %>% 
+  mutate(radius_level = case_when(radius_mean>15 ~ "Large",
+                                   radius_mean<10 ~ "Small",
+                                   TRUE ~ "Medium"))
+
+# create a texture level group according to quantile., Q1 is lower than 25% quantile, Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and Q4 is higher than 75% quantile.
+cancer_subsample <- cancer_subsample %>% 
+  mutate(texture_level = case_when( texture_mean < 16.17  ~ "Q1",
+                                   texture_mean< 18.84 ~ "Q2",
+                                   texture_mean< 21.80 ~ "Q3",
+                                   TRUE ~ "Q4"))
+head(cancer_subsample)
+```
+
+    ## # A tibble: 6 × 14
+    ##       ID diagn…¹ radiu…² textu…³ perim…⁴ area_…⁵ smoot…⁶ compa…⁷ conca…⁸ conca…⁹
+    ##    <dbl> <fct>     <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ## 1 8.42e5 malign…    18.0    10.4   123.    1001   0.118   0.278   0.300   0.147 
+    ## 2 8.43e5 malign…    20.6    17.8   133.    1326   0.0847  0.0786  0.0869  0.0702
+    ## 3 8.43e7 malign…    19.7    21.2   130     1203   0.110   0.160   0.197   0.128 
+    ## 4 8.43e7 malign…    11.4    20.4    77.6    386.  0.142   0.284   0.241   0.105 
+    ## 5 8.44e7 malign…    20.3    14.3   135.    1297   0.100   0.133   0.198   0.104 
+    ## 6 8.44e5 malign…    12.4    15.7    82.6    477.  0.128   0.17    0.158   0.0809
+    ## # … with 4 more variables: symmetry_mean <dbl>, fractal_dimension_mean <dbl>,
+    ## #   radius_level <chr>, texture_level <chr>, and abbreviated variable names
+    ## #   ¹​diagnosis, ²​radius_mean, ³​texture_mean, ⁴​perimeter_mean, ⁵​area_mean,
+    ## #   ⁶​smoothness_mean, ⁷​compactness_mean, ⁸​concavity_mean, ⁹​concave_points_mean
+
+<!----------------------------------------------------------------------------->
+
+# Task 2: Special Data Types (10)
+
+For this exercise, you’ll be choosing two of the three tasks below –
+both tasks that you choose are worth 5 points each.
+
+But first, tasks 1 and 2 below ask you to modify a plot you made in a
+previous milestone. The plot you choose should involve plotting across
+at least three groups (whether by facetting, or using an aesthetic like
+colour). Place this plot below (you’re allowed to modify the plot if
+you’d like). If you don’t have such a plot, you’ll need to make one.
+Place the code for your plot below.
+
+<!-------------------------- Start your work below ---------------------------->
+
+``` r
+p <- cancer_subsample %>% 
+  ggplot(aes(texture_level, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis)+
+  theme_bw()
+print(p)
+```
+
+![](mini-project-2_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+<!----------------------------------------------------------------------------->
+
+Now, choose two of the following tasks.
+
+1.  Produce a new plot that reorders a factor in your original plot,
+    using the `forcats` package (3 points). Then, in a sentence or two,
+    briefly explain why you chose this ordering (1 point here for
+    demonstrating understanding of the reordering, and 1 point for
+    demonstrating some justification for the reordering, which could be
+    subtle or speculative.)
+
+2.  Produce a new plot that groups some factor levels together into an
+    “other” category (or something similar), using the `forcats` package
+    (3 points). Then, in a sentence or two, briefly explain why you
+    chose this grouping (1 point here for demonstrating understanding of
+    the grouping, and 1 point for demonstrating some justification for
+    the grouping, which could be subtle or speculative.)
+
+3.  If your data has some sort of time-based column like a date (but
+    something more granular than just a year):
+
+    1.  Make a new column that uses a function from the `lubridate` or
+        `tsibble` package to modify your original time-based column. (3
+        points)
+
+        -   Note that you might first have to *make* a time-based column
+            using a function like `ymd()`, but this doesn’t count.
+        -   Examples of something you might do here: extract the day of
+            the year from a date, or extract the weekday, or let 24
+            hours elapse on your dates.
+
+    2.  Then, in a sentence or two, explain how your new column might be
+        useful in exploring a research question. (1 point for
+        demonstrating understanding of the function you used, and 1
+        point for your justification, which could be subtle or
+        speculative).
+
+        -   For example, you could say something like “Investigating the
+            day of the week might be insightful because penguins don’t
+            work on weekends, and so may respond differently”.
+
+<!-------------------------- Start your work below ---------------------------->
+
+**Task Number**: 1
+
+``` r
+cancer_subsample$texture_level <- as.factor(cancer_subsample$texture_level)
+levels(cancer_subsample$texture_level)
+```
+
+    ## [1] "Q1" "Q2" "Q3" "Q4"
+
+The factor levels of column `texture_level` in data frame
+`cancer_subsample` are ordered alphabetically. Their difference in
+median of radius mean is small, it would be better to order factor
+levels according to their median of radius, so readers can tell the
+difference in distribution of radius from the order of categories on x
+axis. Moreover, we want to see different orders of factors within benign
+group and malignant group.
+
+``` r
+cancer_subsample <- cancer_subsample %>% 
+  mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
+```
+
+``` r
+p <- cancer_subsample %>% 
+  ggplot(aes(neworder_t, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis,scales = "free_x")+
+  labs(x = "texture_level (Quarter)") + 
+  scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  theme_bw()
+print(p)
+```
+
+![](mini-project-2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+From the plot above, it is clear that larger texture mean is associated
+with larger mean of concave points in benign group. However, the trend
+is slightly different in malignant group. The median of concave points
+number is higher in malignant group in overall. The 4th quarter of
+texture_mean has lowest median value of concave ponits number in benign
+group. By contrast, it has the 2nd highest median value of concave
+points number in malignant group. By reordering the factor, we can
+easily tell the difference in association between texture and concave
+points within two groups.
+
+<!----------------------------------------------------------------------------->
+<!-------------------------- Start your work below ---------------------------->
+
+**Task Number**: 2 From plots in Task 1, 2nd and 3rd quarter of
+texture_mean have very similar distrubution in number of concave ponits,
+so I would like to combine these two levels into one factor level called
+`Medium`. First Quarter of texture_mean will be renamed as `Low` and
+Fourth Quarter of texture_mean will be renamed as `High`.
+
+``` r
+cancer_subsample$texture_level <- cancer_subsample$texture_level %>% fct_collapse( Medium = c("Q2","Q3"))
+levels(cancer_subsample$texture_level) <- c("Low","Medium","High")
+levels(cancer_subsample$texture_level)
+```
+
+    ## [1] "Low"    "Medium" "High"
+
+``` r
+cancer_subsample <- cancer_subsample %>% 
+  mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
+```
+
+``` r
+p <- cancer_subsample %>% 
+  ggplot(aes(neworder_t, concave_points_mean)) + 
+  geom_boxplot(width = 0.1) +
+  stat_summary(fun = "mean", geom = "point",shape = 8,
+               size = 0.3, color = "dark green") +
+  facet_wrap(~diagnosis,scales = "free_x")+
+  labs(x = "texture_level") + 
+  #scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  theme_bw()
+print(p)
+```
+
+![](mini-project-2_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+The trend is more clear after grouping Q2 and Q3 together. Low texture
+level is associated with higher concave points mean in both groups. High
+texture level is expected to have higher concave points mean than the
+medium texture level in malignant group, but it is expected to have
+lower concave points mean than the medium texture level in benign group.
+Therefore, high texture level along with larger concave points might be
+one of the characteristics of a malignant tumor.
+<!----------------------------------------------------------------------------->
+
+# Task 3: Modelling
+
+## 2.0 (no points)
+
+Pick a research question, and pick a variable of interest (we’ll call it
+“Y”) that’s relevant to the research question. Indicate these.
+
+<!-------------------------- Start your work below ---------------------------->
+
+**Research Question**: Is there any relationship between radius mean and
+number of concave portions of the contour?
+
+**Variable of interest**: radius_mean
+
+<!----------------------------------------------------------------------------->
+
+## 2.1 (5 points)
+
+Fit a model or run a hypothesis test that provides insight on this
+variable with respect to the research question. Store the model object
+as a variable, and print its output to screen. We’ll omit having to
+justify your choice, because we don’t expect you to know about model
+specifics in STAT 545.
+
+-   **Note**: It’s OK if you don’t know how these models/tests work.
+    Here are some examples of things you can do here, but the sky’s the
+    limit.
+
+    -   You could fit a model that makes predictions on Y using another
+        variable, by using the `lm()` function.
+    -   You could test whether the mean of Y equals 0 using `t.test()`,
+        or maybe the mean across two groups are different using
+        `t.test()`, or maybe the mean across multiple groups are
+        different using `anova()` (you may have to pivot your data for
+        the latter two).
+    -   You could use `lm()` to test for significance of regression.
+
+<!-------------------------- Start your work below ---------------------------->
+
+``` r
+model <- lm(radius_mean ~ concave_points_mean, data = cancer_subsample)
+summary(model)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = radius_mean ~ concave_points_mean, data = cancer_subsample)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -6.9116 -1.2789  0.0458  1.3508  5.7222 
+    ## 
+    ## Coefficients:
+    ##                     Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)          10.4730     0.1354   77.35   <2e-16 ***
+    ## concave_points_mean  74.7015     2.1691   34.44   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 2.006 on 567 degrees of freedom
+    ## Multiple R-squared:  0.6766, Adjusted R-squared:  0.676 
+    ## F-statistic:  1186 on 1 and 567 DF,  p-value: < 2.2e-16
+
+P value of coefficient of concave_points_mean is smaller than 0.05,
+which indicates we have strong evidence to reject the null hypothesis
+that there is no association between concave_points_mean and
+radius_mean.
+
+<!----------------------------------------------------------------------------->
+
+## 2.2 (5 points)
+
+Produce something relevant from your fitted model: either predictions on
+Y, or a single value like a regression coefficient or a p-value.
+
+-   Be sure to indicate in writing what you chose to produce.
+-   Your code should either output a tibble (in which case you should
+    indicate the column that contains the thing you’re looking for), or
+    the thing you’re looking for itself.
+-   Obtain your results using the `broom` package if possible. If your
+    model is not compatible with the broom function you’re needing, then
+    you can obtain your results by some other means, but first indicate
+    which broom function is not compatible.
+
+<!-------------------------- Start your work below ---------------------------->
+
+I am looking for the R-squared value of my model. From the tibble, it is
+clear that R-squared value is specified in `r.squared` column, which is
+0.68 approximately. It means that 68% of the variation of the observed
+radius_mean can be explained by the model.
+
+``` r
+glance(model)
+```
+
+    ## # A tibble: 1 × 12
+    ##   r.squared adj.r.squ…¹ sigma stati…²   p.value    df logLik   AIC   BIC devia…³
+    ##       <dbl>       <dbl> <dbl>   <dbl>     <dbl> <dbl>  <dbl> <dbl> <dbl>   <dbl>
+    ## 1     0.677       0.676  2.01   1186. 4.35e-141     1 -1202. 2411. 2424.   2282.
+    ## # … with 2 more variables: df.residual <int>, nobs <int>, and abbreviated
+    ## #   variable names ¹​adj.r.squared, ²​statistic, ³​deviance
+
+<!----------------------------------------------------------------------------->
+
+# Task 4: Reading and writing data
+
+Get set up for this exercise by making a folder called `output` in the
+top level of your project folder / repository. You’ll be saving things
+there.
+
+## 3.1 (5 points)
+
+Take a summary table that you made from Milestone 1 (Task 4.2), and
+write it as a csv file in your `output` folder. Use the `here::here()`
+function.
+
+-   **Robustness criteria**: You should be able to move your Mini
+    Project repository / project folder to some other location on your
+    computer, or move this very Rmd file to another location within your
+    project repository / folder, and your code should still work.
+-   **Reproducibility criteria**: You should be able to delete the csv
+    file, and remake it simply by knitting this Rmd file.
+
+<!-------------------------- Start your work below ---------------------------->
+
+``` r
+out_t <- cancer_subsample %>% 
+  group_by(diagnosis,radius_level) %>% 
+  summarise(range = range(concave_points_mean),mean = mean(concave_points_mean), median = median(concave_points_mean),sd = sd(concave_points_mean))
+```
+
+    ## `summarise()` has grouped output by 'diagnosis', 'radius_level'. You can
+    ## override using the `.groups` argument.
+
+``` r
+write_csv(out_t, file.path("output", "here_exported_file.csv"))
+```
+
+<!----------------------------------------------------------------------------->
+
+## 3.2 (5 points)
+
+Write your model object from Task 3 to an R binary file (an RDS), and
+load it again. Be sure to save the binary file in your `output` folder.
+Use the functions `saveRDS()` and `readRDS()`.
+
+-   The same robustness and reproducibility criteria as in 3.1 apply
+    here.
+
+<!-------------------------- Start your work below ---------------------------->
+
+``` r
+saveRDS(model, file.path("output","model_info"))
+readRDS(file.path("output","model_info"))
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = radius_mean ~ concave_points_mean, data = cancer_subsample)
+    ## 
+    ## Coefficients:
+    ##         (Intercept)  concave_points_mean  
+    ##               10.47                74.70
+
+<!----------------------------------------------------------------------------->
+
+# Tidy Repository
+
+Now that this is your last milestone, your entire project repository
+should be organized. Here are the criteria we’re looking for.
+
+## Main README (3 points)
+
+There should be a file named `README.md` at the top level of your
+repository. Its contents should automatically appear when you visit the
+repository on GitHub.
+
+Minimum contents of the README file:
+
+-   In a sentence or two, explains what this repository is, so that
+    future-you or someone else stumbling on your repository can be
+    oriented to the repository.
+-   In a sentence or two (or more??), briefly explains how to engage
+    with the repository. You can assume the person reading knows the
+    material from STAT 545A. Basically, if a visitor to your repository
+    wants to explore your project, what should they know?
+
+Once you get in the habit of making README files, and seeing more README
+files in other projects, you’ll wonder how you ever got by without them!
+They are tremendously helpful.
+
+## File and Folder structure (3 points)
+
+You should have at least four folders in the top level of your
+repository: one for each milestone, and one output folder. If there are
+any other folders, these are explained in the main README.
+
+Each milestone document is contained in its respective folder, and
+nowhere else.
+
+Every level-1 folder (that is, the ones stored in the top level, like
+“Milestone1” and “output”) has a `README` file, explaining in a sentence
+or two what is in the folder, in plain language (it’s enough to say
+something like “This folder contains the source for Milestone 1”).
+
+## Output (2 points)
+
+All output is recent and relevant:
+
+-   All Rmd files have been `knit`ted to their output, and all data
+    files saved from Task 4 above appear in the `output` folder.
+-   All of these output files are up-to-date – that is, they haven’t
+    fallen behind after the source (Rmd) files have been updated.
+-   There should be no relic output files. For example, if you were
+    knitting an Rmd to html, but then changed the output to be only a
+    markdown file, then the html file is a relic and should be deleted.
+
+Our recommendation: delete all output files, and re-knit each
+milestone’s Rmd file, so that everything is up to date and relevant.
+
+PS: there’s a way where you can run all project code using a single
+command, instead of clicking “knit” three times. More on this in STAT
+545B!
+
+## Error-free code (1 point)
+
+This Milestone 1 document knits error-free, and the Milestone 2 document
+knits error-free.
+
+## Tagged release (1 point)
+
+You’ve tagged a release for Milestone 1, and you’ve tagged a release for
+Milestone 2.
+
+### Attribution
+
+Thanks to Victor Yuan for mostly putting this together.
