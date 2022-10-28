@@ -65,6 +65,8 @@ Based on the definition above, can you identify if your data is tidy or untidy? 
 ```{r}
 head(cancer_sample)
 ```
+
+**Original sub data set:**
 ```{r}
 cancer_1 <- cancer_sample[1:8]
 head(cancer_1)
@@ -82,12 +84,15 @@ If your data is untidy, then tidy it! Then, untidy it back to it's original stat
 Be sure to explain your reasoning for this task. Show us the "before" and "after".
 
 <!--------------------------- Start your work below --------------------------->
+**Untidy my data set:**
 ```{r}
 cancer_2 <- cancer_1 %>% pivot_longer(c(-1,-2), 
                          names_to = "types", 
                          values_to = 'values')
 cancer_2
 ```
+
+**Tidy my data set:**
 ```{r}
 cancer_3 <- cancer_2 %>% pivot_wider(names_from=types, 
                        values_from = values)
@@ -134,7 +139,9 @@ cancer_subsample <- cancer_subsample %>%
                                    radius_mean<10 ~ "Small",
                                    TRUE ~ "Medium"))
 
-# create a texture level group according to quantile., Q1 is lower than 25% quantile, Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and Q4 is higher than 75% quantile.
+# create a texture level group according to quantile., Q1 is lower than 25% quantile, 
+#Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and 
+#Q4 is higher than 75% quantile.
 cancer_subsample <- cancer_subsample %>% 
   mutate(texture_level = case_when( texture_mean < 16.17  ~ "Q1",
                                    texture_mean< 18.84 ~ "Q2",
@@ -188,6 +195,7 @@ Now, choose two of the following tasks.
 
 **Task Number**: 1
 ```{r}
+# change texture_level as a factor
 cancer_subsample$texture_level <- as.factor(cancer_subsample$texture_level)
 levels(cancer_subsample$texture_level)
 ```
@@ -195,8 +203,11 @@ levels(cancer_subsample$texture_level)
 The factor levels of column `texture_level` in data frame `cancer_subsample` are ordered alphabetically. Their difference in median of radius mean is small, it would be better to order factor levels according to their median of radius, so readers can tell the difference in distribution of radius from the order of categories on x axis. Moreover, we want to see different orders of factors within benign group and malignant group.
 
 ```{r}
+
 cancer_subsample <- cancer_subsample %>% 
+  # refactor texture_level according to different diagnosis
   mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  # reorder texture_level according to median of concave_points_mean 
   mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
 ```
 
@@ -208,18 +219,19 @@ p <- cancer_subsample %>%
                size = 0.3, color = "dark green") +
   facet_wrap(~diagnosis,scales = "free_x")+
   labs(x = "texture_level (Quarter)") + 
-  scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  #scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
   theme_bw()
 print(p)
 ```
 
-From the plot above, it is clear that larger texture mean is associated with larger mean of concave points in benign group. However, the trend is slightly different in malignant group. The median of concave points number is higher in malignant group in overall. The 4th quarter of texture_mean has lowest median value of concave ponits number in benign group. By contrast, it has the 2nd highest median value of concave points number in malignant group. By reordering the factor, we can easily tell the difference in association between texture and concave points within two groups.
+From the plot above, it is clear that smaller texture mean is associated with larger mean of concave points in benign group. However, the trend is slightly different in malignant group. The median of concave points number is higher in malignant group in overall. The 4th quarter of texture_mean has lowest median value of concave ponits number in benign group. By contrast, it has the 2nd highest median value of concave points number in malignant group. By reordering the factor, we can easily tell the difference in association between texture and concave points within two groups.
 
 <!----------------------------------------------------------------------------->
 
 <!-------------------------- Start your work below ---------------------------->
 
 **Task Number**: 2
+
 From plots in Task 1, 2nd and 3rd quarter of texture_mean have very similar distrubution in number of concave ponits, so I would like to combine these two levels into one factor level called `Medium`. First Quarter of texture_mean will be renamed as `Low` and Fourth Quarter of texture_mean will be renamed as `High`.
 
 ```{r}
@@ -315,7 +327,9 @@ out_t <- cancer_subsample %>%
   group_by(diagnosis,radius_level) %>% 
   summarise(range = range(concave_points_mean),mean = mean(concave_points_mean), median = median(concave_points_mean),sd = sd(concave_points_mean))
 ```
-```{r}
+```{r warning=FALSE}
+setwd(here::here())
+dir.create(here::here("output"))
 write_csv(out_t, file.path("output", "here_exported_file.csv"))
 ```
 
@@ -328,7 +342,8 @@ Write your model object from Task 3 to an R binary file (an RDS), and load it ag
 -   The same robustness and reproducibility criteria as in 3.1 apply here.
 
 <!-------------------------- Start your work below ---------------------------->
-```{r}
+```{r warning=FALSE}
+setwd(here::here())
 saveRDS(model, file.path("output","model_info"))
 readRDS(file.path("output","model_info"))
 ```

@@ -117,6 +117,8 @@ head(cancer_sample)
     ## #   area_worst <dbl>, smoothness_worst <dbl>, compactness_worst <dbl>,
     ## #   concavity_worst <dbl>, concave_points_worst <dbl>, symmetry_worst <dbl>, …
 
+**Original sub data set:**
+
 ``` r
 cancer_1 <- cancer_sample[1:8]
 head(cancer_1)
@@ -151,6 +153,8 @@ and “after”.
 
 <!--------------------------- Start your work below --------------------------->
 
+**Untidy my data set:**
+
 ``` r
 cancer_2 <- cancer_1 %>% pivot_longer(c(-1,-2), 
                          names_to = "types", 
@@ -172,6 +176,8 @@ cancer_2
     ##  9 842517 M         perimeter_mean    133.   
     ## 10 842517 M         area_mean        1326    
     ## # … with 3,404 more rows
+
+**Tidy my data set:**
 
 ``` r
 cancer_3 <- cancer_2 %>% pivot_wider(names_from=types, 
@@ -251,7 +257,9 @@ cancer_subsample <- cancer_subsample %>%
                                    radius_mean<10 ~ "Small",
                                    TRUE ~ "Medium"))
 
-# create a texture level group according to quantile., Q1 is lower than 25% quantile, Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and Q4 is higher than 75% quantile.
+# create a texture level group according to quantile., Q1 is lower than 25% quantile, 
+#Q2 is between 25% and 50% quantile, Q3 is between 50% abd 75% quantile and 
+#Q4 is higher than 75% quantile.
 cancer_subsample <- cancer_subsample %>% 
   mutate(texture_level = case_when( texture_mean < 16.17  ~ "Q1",
                                    texture_mean< 18.84 ~ "Q2",
@@ -349,6 +357,7 @@ Now, choose two of the following tasks.
 **Task Number**: 1
 
 ``` r
+# change texture_level as a factor
 cancer_subsample$texture_level <- as.factor(cancer_subsample$texture_level)
 levels(cancer_subsample$texture_level)
 ```
@@ -365,7 +374,9 @@ group and malignant group.
 
 ``` r
 cancer_subsample <- cancer_subsample %>% 
+  # refactor texture_level according to different diagnosis
   mutate(neworder_t = paste0(diagnosis, texture_level)) %>% 
+  # reorder texture_level according to median of concave_points_mean 
   mutate(neworder_t = fct_reorder(neworder_t,concave_points_mean)) 
 ```
 
@@ -377,14 +388,14 @@ p <- cancer_subsample %>%
                size = 0.3, color = "dark green") +
   facet_wrap(~diagnosis,scales = "free_x")+
   labs(x = "texture_level (Quarter)") + 
-  scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
+  #scale_x_discrete(labels = setNames(cancer_subsample$texture_level, cancer_subsample$neworder_t))+
   theme_bw()
 print(p)
 ```
 
 ![](mini-project-2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-From the plot above, it is clear that larger texture mean is associated
+From the plot above, it is clear that smaller texture mean is associated
 with larger mean of concave points in benign group. However, the trend
 is slightly different in malignant group. The median of concave points
 number is higher in malignant group in overall. The 4th quarter of
@@ -397,11 +408,13 @@ points within two groups.
 <!----------------------------------------------------------------------------->
 <!-------------------------- Start your work below ---------------------------->
 
-**Task Number**: 2 From plots in Task 1, 2nd and 3rd quarter of
-texture_mean have very similar distrubution in number of concave ponits,
-so I would like to combine these two levels into one factor level called
-`Medium`. First Quarter of texture_mean will be renamed as `Low` and
-Fourth Quarter of texture_mean will be renamed as `High`.
+**Task Number**: 2
+
+From plots in Task 1, 2nd and 3rd quarter of texture_mean have very
+similar distrubution in number of concave ponits, so I would like to
+combine these two levels into one factor level called `Medium`. First
+Quarter of texture_mean will be renamed as `Low` and Fourth Quarter of
+texture_mean will be renamed as `High`.
 
 ``` r
 cancer_subsample$texture_level <- cancer_subsample$texture_level %>% fct_collapse( Medium = c("Q2","Q3"))
@@ -576,6 +589,8 @@ out_t <- cancer_subsample %>%
     ## override using the `.groups` argument.
 
 ``` r
+setwd(here::here())
+dir.create(here::here("output"))
 write_csv(out_t, file.path("output", "here_exported_file.csv"))
 ```
 
@@ -593,6 +608,7 @@ Use the functions `saveRDS()` and `readRDS()`.
 <!-------------------------- Start your work below ---------------------------->
 
 ``` r
+setwd(here::here())
 saveRDS(model, file.path("output","model_info"))
 readRDS(file.path("output","model_info"))
 ```
